@@ -3,6 +3,7 @@
 library(ggplot2)
 library(data.table)
 library(dplyr)
+library(gridExtra)
 
 ## change doc path
 docpath <- 'data.csv'
@@ -12,9 +13,27 @@ data <- read.csv(docpath)
 colnames(data); head(data)
 summary(data)
 
-ggboxplot(signal, x = 'pH', y = 'c1') ## change pH c1 to each combo
+## change pH, c1to each combo
+dat <- data.table(data)
+summaries <- dat[, .(obs = .N, mean = mean(signal), min = min(signal), qt25 = quantile(signal, 0.25),
+                     median = median(signal), qt75 = quantile(signal, 0.75),
+                     max = max(signal), std = sd(signal)), by = .(pH, c1)]
+box <- ggplot(data, aes(factor(c1), signal) + ## base
+              geom_boxplot(aes(fill = pH), alpha = .8) + # boxplot
+              scale_fill_manual(name = 'pH') + # col adjust
+              labs(title = 'Boxplot of signal intensity', x = 'c1', y = 'signal') +
+              theme(legend.position = c(1, 0.4), legend.justification = c(1, 1),
+                    legend.background = element_rect(fill = NA),
+                    plot.title = element_text(hjust = 0.5))
+scatter <- ggplot(summaries, aes(x = factor(c1), y = mean, color = pH, group = pH)) +
+              geom_point(size = 3, alpha = .8) + geom_line() +
+              scale_color_manual(name = 'pH') +
+              labs(title = 'Scatterplot of the mean signal', x = 'c1', y = 'mean signal') +
+              theme(legend.position = c(1, 0.4), legend.justification = c(1, 1),
+                    legend.background = element_rect(fill = NA),
+                    plot.title = element_text(hjust = 0.5))
+grid.arrange(box, scatter, ncol = 2, nrow = 1)
 ## looks like no interaction between each trts.
-
 
 
 ###################################################
